@@ -27,7 +27,25 @@ error_code_t lm75bdInit(lm75bd_config_t *config) {
 
 error_code_t readTempLM75BD(uint8_t devAddr, float *temp) {
   /* Implement this driver function */
-  
+
+  uint8_t pointerReg[1] = {0};
+  i2cSendTo(LM75BD_OBC_I2C_ADDR, pointerReg, 1);
+
+  uint8_t twosCOMP[2] = {0};
+  int16_t decimalREP = 0;
+  i2cReceiveFrom(LM75BD_OBC_I2C_ADDR, twosCOMP, 2);
+  decimalREP = twosCOMP[0];
+  decimalREP=(decimalREP << 8) | twosCOMP[1];
+
+  if((twosCOMP[0] & 0b10000000) == 0b10000000){ //two's complement
+    decimalREP = ((~decimalREP)>>5)+0b0000000000000001;
+    
+    *temp = decimalREP * -0.125;
+  }
+  else{ //not two's complement
+    decimalREP = decimalREP>>5;
+    *temp = decimalREP*0.125;
+  }
   return ERR_CODE_SUCCESS;
 }
 
