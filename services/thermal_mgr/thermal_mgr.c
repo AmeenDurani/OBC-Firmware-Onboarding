@@ -51,7 +51,7 @@ error_code_t thermalMgrSendEvent(thermal_mgr_event_t *event) {
 void osHandlerLM75BD(void) {
   /* Implement this function */
   thermal_mgr_event_t interup;
-  interup.type = InteruptSqn;
+  interup.type = THERMAL_MGR_EVENT_INTERUPT;
   thermalMgrSendEvent(&interup);
 
 }
@@ -63,18 +63,19 @@ static void thermalMgr(void *pvParameters) {
   thermal_mgr_event_t buff;
 
   while (1) {
-   xQueueReceive(thermalMgrQueueHandle, &buff, 1);
+   if(xQueueReceive(thermalMgrQueueHandle, &buff, portMAX_DELAY) == pdTRUE){
 
-   if (buff.type == THERMAL_MGR_EVENT_MEASURE_TEMP_CMD){
-      readTempLM75BD(LM75BD_OBC_I2C_ADDR, &temp);
-      addTemperatureTelemetry(temp);
-   }
+      if (buff.type == THERMAL_MGR_EVENT_MEASURE_TEMP_CMD){
+          readTempLM75BD(LM75BD_OBC_I2C_ADDR, &temp);
+          addTemperatureTelemetry(temp);
+      }
 
-   else if( buff.type == InteruptSqn){
-      readTempLM75BD(LM75BD_OBC_I2C_ADDR, &temp);
-      (temp>75) ? overTemperatureDetected(): safeOperatingConditions();
-   }
+      else if( buff.type == THERMAL_MGR_EVENT_INTERUPT){
+          readTempLM75BD(LM75BD_OBC_I2C_ADDR, &temp);
+          (temp>75) ? overTemperatureDetected(): safeOperatingConditions();
+      }
 
+    }
   }
 }
 
